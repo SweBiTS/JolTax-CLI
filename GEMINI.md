@@ -11,7 +11,15 @@ To maintain the same "air" and performance standards as the core library, the fo
 - **Vectorization-First:** The CLI must never iterate over taxonomic nodes in Python loops. Always prefer mass-lookups via `tree.annotate()` or other vectorized methods.
 - **Performance Integrity:** Results should feel instantaneous. Use `rich` progress indicators or status spinners only for heavy IO tasks like `build` or initial `load`.
 - **Strict vs. Safe Queries:** Align with the library's `strict=True` default. If a TaxID is missing, the CLI should provide a clean error message (using `TaxIDNotFoundError` where applicable) rather than a traceback.
-- **Type Safety:** Ensure the CLI robustly handles both integer and string TaxID inputs, mirroring the library's internal type guards.
+- **Type Safety & Hinting:** 
+    - Ensure the CLI robustly handles both integer and string TaxID inputs, mirroring the library's internal type guards.
+    - **All** public and internal methods MUST use explicit type hinting for parameters and return types.
+- **Documentation Standards:**
+    - Every module, class, and method MUST have a descriptive docstring.
+    - Use **Google-style docstrings** (with `Args`, `Returns`, and `Raises` sections) as established in `joltree.py`.
+- **Logging vs. Printing:**
+    - Use the standard `logging` module for system events, errors, and background tasks.
+    - Use the `rich` console only for direct user interaction and formatted taxonomic output.
 - **2025 Taxonomy Support:** Correctly handle `superkingdom` vs `domain` terminology in all tables and summaries.
 
 ## 3. Architectural Mandates
