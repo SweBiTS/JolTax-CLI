@@ -26,7 +26,11 @@ except ImportError:
                      names: Optional[str] = None, path: Optional[str] = None):
             self.path = path or tax_dir or nodes
             self.available_ranks = ["domain", "phylum", "class", "order", "family", "genus", "species"]
-            self.node_count = 1000
+            self.parents = [0] * 1000 # To simulate node count
+            self.top_rank = "domain"
+            self._build_time = "2026-03-01 12:00:00"
+            self._source_nodes = nodes or "nodes.dmp"
+            self._source_names = names or "names.dmp"
             
         @classmethod
         def load(cls, path: str) -> 'JolTree':

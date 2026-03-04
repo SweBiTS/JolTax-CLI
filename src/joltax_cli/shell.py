@@ -288,14 +288,43 @@ class JolTaxShell:
         if not self._ensure_loaded():
             return
 
-        self.console.print(f"[bold underline]Taxonomy Summary: {self.current_name}[/bold underline]")
+        # Header
+        self.console.print(f"\n[bold underline]Taxonomy Summary: {self.current_name}[/bold underline]")
         
-        # Access actual properties of JolTree if available
-        ranks: List[str] = getattr(self.current_tree, 'available_ranks', [])
-        self.console.print(f"Available ranks: [cyan]{', '.join(ranks)}[/cyan]")
+        # Core Metadata Table
+        table = Table(box=None, show_header=False, padding=(0, 2))
+        table.add_column("Property", style="bold cyan")
+        table.add_column("Value")
+
+        # Node Count
+        if hasattr(self.current_tree, 'parents'):
+            table.add_row("Nodes", f"{len(self.current_tree.parents):,}")
         
-        if hasattr(self.current_tree, 'node_count'):
-            self.console.print(f"Node count: {self.current_tree.node_count}")
+        # Top Rank
+        top_rank = getattr(self.current_tree, 'top_rank', 'Unknown')
+        table.add_row("Top Rank", top_rank)
+
+        # Build Provenance
+        build_time = getattr(self.current_tree, '_build_time', 'Unknown')
+        table.add_row("Built At", build_time)
+
+        source_nodes = getattr(self.current_tree, '_source_nodes', 'Unknown')
+        table.add_row("Source Nodes", str(source_nodes))
+
+        source_names = getattr(self.current_tree, '_source_names', 'Unknown')
+        table.add_row("Source Names", str(source_names))
+
+        self.console.print(table)
+
+        # Available Ranks (Formatted list)
+        ranks = sorted(getattr(self.current_tree, 'available_ranks', []))
+        if ranks:
+            self.console.print("\n[bold]Available Ranks:[/bold]")
+            # Join ranks with commas and wrap them nicely
+            rank_str = ", ".join([f"[cyan]{r}[/cyan]" for r in ranks])
+            self.console.print(rank_str, soft_wrap=True)
+        
+        self.console.print("") # Final newline
 
     def handle_annotate(self, args: List[str]) -> None:
         """
