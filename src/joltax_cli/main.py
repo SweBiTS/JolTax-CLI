@@ -16,7 +16,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
     datefmt="[%X]",
-    handlers=[RichHandler(console=console, rich_tracebacks=True, show_path=False)]
+    handlers=[RichHandler(console=console, rich_tracebacks=True, show_path=False)],
+    force=True
 )
 
 def main() -> None:
