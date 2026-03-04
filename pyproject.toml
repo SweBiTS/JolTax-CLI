@@ -9,7 +9,7 @@ description = "An interactive CLI explorer for the joltax taxonomy library"
 authors = [
     { name="Daniel" }
 ]
-readme = "CLI_BLUEPRINT.md"
+readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "prompt_toolkit",
