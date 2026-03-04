@@ -4,13 +4,20 @@ Interactive shell implementation for JolTax.
 Handles the REPL loop, command parsing, and output management.
 """
 
+import os
 import sys
 import logging
+import psutil
 from typing import Optional, List, Union, Any
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.lexers import PygmentsLexer
+from pygments.lexers.shell import BashLexer
 from rich.console import Console
 from rich.table import Table
+from rich.panel import Panel
+from rich.columns import Columns
 from rich.prompt import Confirm
 
 from .loader import TaxonomyLoader, JolTree
@@ -49,12 +56,56 @@ class JolTaxShell:
         
         self.session: PromptSession = PromptSession(
             history=FileHistory(str(history_path)),
-            completer=self.completer
+            completer=self.completer,
+            lexer=PygmentsLexer(BashLexer),
+            bottom_toolbar=self._get_bottom_toolbar
         )
         # Use the shared console instance from config.py
         self.console: Console = console
         self.current_tree: Optional[JolTree] = None
         self.current_name: Optional[str] = None
+
+    def _get_bottom_toolbar(self) -> HTML:
+        """
+        Generates the content for the bottom toolbar with live metrics.
+        Uses terminal width for alignment and professional colors.
+
+        Returns:
+            HTML: The formatted toolbar content.
+        """
+        try:
+            cols, _ = os.get_terminal_size()
+        except OSError:
+            cols = 80
+
+        # Metrics
+        process = psutil.Process()
+        mem_mb = process.memory_info().rss / (1024 * 1024)
+        mem_str = f"MEM: {mem_mb:.1f} MB"
+
+        # Content segments (unformatted for length calculation)
+        tax_name = self.current_name or "None"
+        left_text = f" TAX: {tax_name} "
+        mid_text = " EXIT: Ctrl+D "
+        right_text = f" {mem_str} "
+
+        # Calculate padding
+        total_len = len(left_text) + len(mid_text) + len(right_text)
+        if cols > total_len:
+            pad_1 = (cols // 2) - len(left_text) - (len(mid_text) // 2)
+            pad_2 = cols - len(left_text) - pad_1 - len(mid_text) - len(right_text)
+            padding_1 = " " * max(0, pad_1)
+            padding_2 = " " * max(0, pad_2)
+        else:
+            padding_1 = " | "
+            padding_2 = " | "
+
+        # Formatted segments
+        left_fmt = f'<style fg="ansiblue">TAX:</style> <style fg="ansicyan">{tax_name}</style>'
+        mid_fmt = f'<style fg="ansiblue">EXIT:</style> <style fg="ansicyan">Ctrl+D</style>'
+        right_fmt = f'<style fg="ansiblue">MEM:</style> <style fg="ansicyan">{mem_mb:.1f} MB</style>'
+
+        return HTML(f"{left_fmt}{padding_1}{mid_fmt}{padding_2}{right_fmt}")
 
     def get_prompt(self) -> str:
         """
@@ -207,20 +258,42 @@ class JolTaxShell:
         Handles the 'use' command to switch taxonomies.
 
         Args:
-            args: Command arguments [name]. If empty, lists available taxonomies.
+            args: Command arguments [name]. If empty, provides interactive selection.
             silent: If True, suppresses non-error output (used for auto-load).
         """
-        if not args:
-            taxonomies: List[str] = self.loader.list_available_taxonomies()
-            if not taxonomies:
-                self.console.print("[yellow]No taxonomies found in cache.[/yellow]")
-            else:
-                self.console.print("Available taxonomies:")
-                for tax in taxonomies:
-                    self.console.print(f"  - {tax}")
+        taxonomies: List[str] = self.loader.list_available_taxonomies()
+        
+        if not taxonomies:
+            self.console.print("[yellow]No taxonomies found in cache. Use 'build' to create one.[/yellow]")
             return
 
-        name: str = args[0]
+        name: Optional[str] = None
+        
+        if not args:
+            if silent: return # Don't prompt in silent mode
+            
+            # Interactive selection if no args provided
+            self.console.print("Available taxonomies:")
+            for i, tax in enumerate(taxonomies, 1):
+                self.console.print(f"  [bold cyan]{i}.[/bold cyan] {tax}")
+            
+            choice = self.console.input("\n[bold]Select a taxonomy (number or name): [/bold]")
+            if choice.isdigit():
+                idx = int(choice) - 1
+                if 0 <= idx < len(taxonomies):
+                    name = taxonomies[idx]
+            elif choice in taxonomies:
+                name = choice
+            
+            if not name:
+                self.console.print("[red]Invalid selection.[/red]")
+                return
+        else:
+            name = args[0]
+            if name not in taxonomies:
+                self.console.print(f"[red]Error:[/red] Taxonomy '{name}' not found in cache.")
+                return
+
         tree = self.loader.load_taxonomy(name)
         if tree:
             self.current_tree = tree
@@ -288,41 +361,30 @@ class JolTaxShell:
         if not self._ensure_loaded():
             return
 
-        # Header
-        self.console.print(f"\n[bold underline]Taxonomy Summary: {self.current_name}[/bold underline]")
+        # Metrics
+        node_count = f"{len(self.current_tree.parents):,}" if hasattr(self.current_tree, 'parents') else "Unknown"
         
-        # Core Metadata Table
-        table = Table(box=None, show_header=False, padding=(0, 2))
-        table.add_column("Property", style="bold cyan")
-        table.add_column("Value")
-
-        # Node Count
-        if hasattr(self.current_tree, 'parents'):
-            table.add_row("Nodes", f"{len(self.current_tree.parents):,}")
-        
-        # Top Rank
-        top_rank = getattr(self.current_tree, 'top_rank', 'Unknown')
-        table.add_row("Top Rank", top_rank)
-
-        # Build Provenance
+        # Provenance Metadata
         build_time = getattr(self.current_tree, '_build_time', 'Unknown')
-        table.add_row("Built At", build_time)
-
         source_nodes = getattr(self.current_tree, '_source_nodes', 'Unknown')
-        table.add_row("Source Nodes", str(source_nodes))
-
         source_names = getattr(self.current_tree, '_source_names', 'Unknown')
-        table.add_row("Source Names", str(source_names))
+        
+        # Combined Content
+        content = (
+            f"[bold cyan]Nodes:[/bold cyan] {node_count}\n"
+            f"[bold cyan]Built At:[/bold cyan] {build_time}\n"
+            f"[bold cyan]Nodes Source:[/bold cyan] {source_nodes}\n"
+            f"[bold cyan]Names Source:[/bold cyan] {source_names}"
+        )
+        
+        provenance_panel = Panel(content, title="[bold]Provenance & Metadata[/bold]", border_style="blue", expand=True)
+        self.console.print(provenance_panel)
 
-        self.console.print(table)
-
-        # Available Ranks (Formatted list)
+        # Available Ranks Panel
         ranks = sorted(getattr(self.current_tree, 'available_ranks', []))
         if ranks:
-            self.console.print("\n[bold]Available Ranks:[/bold]")
-            # Join ranks with commas and wrap them nicely
             rank_str = ", ".join([f"[cyan]{r}[/cyan]" for r in ranks])
-            self.console.print(rank_str, soft_wrap=True)
+            self.console.print(Panel(rank_str, title="[bold]Available Ranks[/bold]", border_style="magenta", padding=(1, 2)))
         
         self.console.print("") # Final newline
 
@@ -413,7 +475,11 @@ class JolTaxShell:
             logger.error(f"Lineage lookup failed for ID '{tax_id}': {e}")
 
     def handle_config(self) -> None:
-        """Handles the 'config' command to re-run the setup wizard."""
+        """
+        Handles the 'config' command to re-run the setup wizard.
+        
+        Refreshes the loader's configuration after the wizard completes.
+        """
         setup_wizard(force=True)
         # Refresh the loader's cache dir in case it changed
         from .config import get_cache_dir

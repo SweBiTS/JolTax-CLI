@@ -34,6 +34,8 @@ To maintain the same "air" and performance standards as the core library, the fo
 - `rich`: For the "Taxonomic Shell" aesthetics (tables, trees, and colors).
 - `pyyaml`: For persistent user configuration.
 - `polars`: For zero-copy data handling between the library and the CLI.
+- `psutil`: For live system metrics and memory tracking in the status bar.
+- `pygments`: For syntax highlighting in the interactive REPL.
 
 ## 5. System Architecture & Configuration
 - **Config Path:** `~/.joltax-cli/config.yaml`
@@ -56,6 +58,7 @@ To maintain the same "air" and performance standards as the core library, the fo
 - [x] Vectorized Taxonomy Loader (Load/Save/Build logic fixed).
 - [x] Interactive REPL with history and context-aware auto-completion.
 - [x] Pretty-printing for DataFrames (`rich.table`) and Lineages (`rich.tree`).
+- [x] Modern UI with status bar, dashboard summaries, and memory tracking.
 - [x] Pager support for large result sets.
 - [x] Unit tests for Shell UI and command handlers.
 - [x] Enhanced code documentation, typing, and logging.

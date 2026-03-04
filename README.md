@@ -4,9 +4,10 @@
 
 ## 🚀 Key Features
 
-- **Interactive REPL:** A persistent shell environment with context-aware auto-completion and command history.
+- **Interactive REPL:** A persistent shell environment with context-aware auto-completion, command history, and a real-time status bar.
+- **Sleek UX:** Features syntax highlighting, interactive taxonomy selection, and live memory usage tracking.
 - **High Performance:** Utilizes the `joltax` vectorized backend for $O(1)$ and $O(\log N)$ taxonomic queries.
-- **Beautiful UI:** Pretty-printed tables, visual lineage trees, and color-coded console output powered by `rich`.
+- **Beautiful UI:** Pretty-printed tables, visual lineage trees, and dashboard-style summaries powered by `rich`.
 - **Flexible Configuration:** Manage multiple taxonomy caches (e.g., NCBI, GTDB) and switch between them seamlessly.
 - **Pager Support:** Long results (like mass annotations) automatically open in a pager (like `less`) for easy reading.
 - **Direct Build:** Create optimized binary caches directly from NCBI-style `.dmp` files.
@@ -21,7 +22,7 @@ cd JolTax-CLI
 pip install -e .
 ```
 
-Ensure you have the `joltax` backend installed as well.
+Ensure you have the `joltax` backend and other core dependencies (`polars`, `psutil`, `pygments`) installed.
 
 ## 🏁 Quick Start
 
@@ -48,7 +49,7 @@ Ensure you have the `joltax` backend installed as well.
 | Command | Description |
 | :--- | :--- |
 | `use <name>` | Switch between available binary caches in your cache directory. |
-| `build <name> <dir>` | Build a new optimized binary cache from NCBI `.dmp` files. |
+| `build <name> <dir> [names]` | Build a new optimized binary cache from NCBI `.dmp` files. |
 | `remove <name>` | Permanently delete a cached taxonomy from the disk. |
 | `annotate <id>...` | Pretty-print canonical ranks (Domain, Phylum, etc.) for one or more IDs. |
 | `find <query>` | Fuzzy search for taxonomic names using the RapidFuzz index. |
