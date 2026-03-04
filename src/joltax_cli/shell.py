@@ -11,6 +11,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 from rich.console import Console
 from rich.table import Table
+from rich.prompt import Confirm
 
 from .loader import TaxonomyLoader, JolTree
 from .formatter import format_dataframe, format_lineage, format_find_results
@@ -88,6 +89,8 @@ class JolTaxShell:
                     self.handle_use(args)
                 elif command == "build":
                     self.handle_build(args)
+                elif command == "remove":
+                    self.handle_remove(args)
                 elif command == "summary":
                     self.handle_summary()
                 elif command == "annotate":
@@ -118,6 +121,7 @@ class JolTaxShell:
         table.add_column("Description", style="white")
         table.add_row("use <name>", "Load a taxonomy from the cache directory.")
         table.add_row("build <name> <dir> [names_dmp]", "Build and save a taxonomy from NCBI DMP files.")
+        table.add_row("remove <name>", "Permanently delete a cached taxonomy from the disk.")
         table.add_row("summary", "Show summary information for the currently loaded taxonomy.")
         table.add_row("annotate <id>...", "Pretty-print canonical ranks for one or more tax IDs.")
         table.add_row("find <query>", "Fuzzy search for tax IDs by name.")
@@ -194,6 +198,46 @@ class JolTaxShell:
             ranks: List[str] = getattr(tree, 'available_ranks', [])
             self.completer.set_available_ranks(ranks)
             self.console.print(f"[green]Successfully loaded '{name}'.[/green]")
+
+    def handle_remove(self, args: List[str]) -> None:
+        """
+        Handles the 'remove' command to delete a taxonomy from the cache.
+
+        Args:
+            args: Command arguments [name].
+        """
+        if not args:
+            self.console.print("[yellow]Usage: remove <name>[/yellow]")
+            return
+
+        name: str = args[0]
+        
+        # Check if it exists first
+        taxonomies = self.loader.list_available_taxonomies()
+        if name not in taxonomies:
+            self.console.print(f"[red]Error:[/red] Taxonomy '{name}' not found in cache.")
+            return
+
+        # Confirm deletion
+        if not Confirm.ask(f"Are you sure you want to [bold red]permanently delete[/bold red] '{name}'?"):
+            self.console.print("Operation cancelled.")
+            return
+
+        try:
+            if self.loader.remove_taxonomy(name):
+                self.console.print(f"[green]Successfully removed '{name}' from cache.[/green]")
+                
+                # If the removed taxonomy was currently loaded, reset the state
+                if self.current_name == name:
+                    self.current_tree = None
+                    self.current_name = None
+                    self.completer.set_available_ranks([])
+                    self.console.print("[yellow]The currently loaded taxonomy has been removed. State reset.[/yellow]")
+            else:
+                self.console.print(f"[red]Error:[/red] Could not find taxonomy '{name}' to remove.")
+        except Exception as e:
+            self.console.print(f"[red]Error removing taxonomy:[/red] {e}")
+            logger.error(f"Remove failed for taxonomy '{name}': {e}")
 
     def handle_summary(self) -> None:
         """Handles the 'summary' command to show info about the active taxonomy."""

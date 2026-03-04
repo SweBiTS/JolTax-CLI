@@ -49,6 +49,7 @@ Ensure you have the `joltax` backend installed as well.
 | :--- | :--- |
 | `use <name>` | Switch between available binary caches in your cache directory. |
 | `build <name> <dir>` | Build a new optimized binary cache from NCBI `.dmp` files. |
+| `remove <name>` | Permanently delete a cached taxonomy from the disk. |
 | `annotate <id>...` | Pretty-print canonical ranks (Domain, Phylum, etc.) for one or more IDs. |
 | `find <query>` | Fuzzy search for taxonomic names using the RapidFuzz index. |
 | `lineage <id>` | Display a visual tree of the taxonomic path to the root. |

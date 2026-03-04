@@ -30,7 +30,7 @@ class JolTaxCompleter(Completer):
         """
         self.loader: TaxonomyLoader = loader
         self.commands: List[str] = [
-            "use", "build", "summary", "annotate", "find", "lineage", "config", "help", "exit", "quit"
+            "use", "build", "remove", "summary", "annotate", "find", "lineage", "config", "help", "exit", "quit"
         ]
         self.current_ranks: List[str] = []
 
@@ -68,8 +68,8 @@ class JolTaxCompleter(Completer):
         # 2. Command-specific completions
         command: str = parts[0].lower()
         
-        # Complete 'use <name>'
-        if command == "use" and len(parts) <= 2:
+        # Complete 'use <name>' or 'remove <name>'
+        if command in ("use", "remove") and len(parts) <= 2:
             word_to_complete: str = parts[1] if len(parts) == 2 else ""
             if not text_before_cursor.endswith(" ") or len(parts) == 1:
                 # Provide taxonomy names from the cache

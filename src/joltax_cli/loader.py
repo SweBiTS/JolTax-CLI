@@ -147,3 +147,25 @@ class TaxonomyLoader:
         except Exception as e:
             logger.error(f"Failed to build taxonomy '{name}': {e}")
             raise
+
+    def remove_taxonomy(self, name: str) -> bool:
+        """
+        Deletes a taxonomy cache directory from the disk.
+
+        Args:
+            name: The name of the taxonomy to remove.
+
+        Returns:
+            bool: True if deleted successfully, False if it didn't exist.
+        """
+        import shutil
+        tax_path = self.cache_dir / name
+        if not tax_path.exists():
+            return False
+        
+        try:
+            shutil.rmtree(tax_path)
+            return True
+        except OSError as e:
+            logger.error(f"Failed to delete taxonomy '{name}': {e}")
+            raise
