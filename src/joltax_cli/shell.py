@@ -16,7 +16,7 @@ from rich.prompt import Confirm
 from .loader import TaxonomyLoader, JolTree
 from .formatter import format_dataframe, format_lineage, format_find_results
 from .completer import JolTaxCompleter
-from .config import setup_wizard, DEFAULT_CONFIG_DIR
+from .config import setup_wizard, DEFAULT_CONFIG_DIR, load_config, save_config
 
 # Set up logging for the module
 logger = logging.getLogger(__name__)
@@ -74,6 +74,15 @@ class JolTaxShell:
         """
         self.console.print("[bold blue]JolTax-CLI Interactive Shell[/bold blue]")
         self.console.print("Type 'help' for commands, 'exit' or Ctrl+D to quit.")
+
+        # Auto-load the last used taxonomy from config
+        config = load_config()
+        last_tax = config.get("last_taxonomy")
+        if last_tax:
+            # Check if it actually exists in cache before trying to load it
+            if last_tax in self.loader.list_available_taxonomies():
+                self.console.print(f"Auto-loading last used taxonomy: [cyan]{last_tax}[/cyan]")
+                self.handle_use([last_tax], silent=True)
 
         while True:
             try:
@@ -175,12 +184,13 @@ class JolTaxShell:
                 self.console.print(f"[red]Error building taxonomy:[/red] {e}")
                 logger.error(f"Build failed for taxonomy '{name}': {e}")
 
-    def handle_use(self, args: List[str]) -> None:
+    def handle_use(self, args: List[str], silent: bool = False) -> None:
         """
         Handles the 'use' command to switch taxonomies.
 
         Args:
             args: Command arguments [name]. If empty, lists available taxonomies.
+            silent: If True, suppresses non-error output (used for auto-load).
         """
         if not args:
             taxonomies: List[str] = self.loader.list_available_taxonomies()
@@ -193,7 +203,9 @@ class JolTaxShell:
             return
 
         name: str = args[0]
-        self.console.print(f"Loading taxonomy '{name}'...")
+        if not silent:
+            self.console.print(f"Loading taxonomy '{name}'...")
+        
         tree = self.loader.load_taxonomy(name)
         if tree:
             self.current_tree = tree
@@ -201,7 +213,14 @@ class JolTaxShell:
             # Update completer with ranks from the new taxonomy
             ranks: List[str] = getattr(tree, 'available_ranks', [])
             self.completer.set_available_ranks(ranks)
-            self.console.print(f"[green]Successfully loaded '{name}'.[/green]")
+            
+            # Save as last used taxonomy in config
+            config = load_config()
+            config["last_taxonomy"] = name
+            save_config(config)
+            
+            if not silent:
+                self.console.print(f"[green]Successfully loaded '{name}'.[/green]")
 
     def handle_remove(self, args: List[str]) -> None:
         """
@@ -231,6 +250,12 @@ class JolTaxShell:
             if self.loader.remove_taxonomy(name):
                 self.console.print(f"[green]Successfully removed '{name}' from cache.[/green]")
                 
+                # Clear last_taxonomy from config if it was the one removed
+                config = load_config()
+                if config.get("last_taxonomy") == name:
+                    config.pop("last_taxonomy", None)
+                    save_config(config)
+
                 # If the removed taxonomy was currently loaded, reset the state
                 if self.current_name == name:
                     self.current_tree = None

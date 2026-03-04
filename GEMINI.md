@@ -59,6 +59,7 @@ To maintain the same "air" and performance standards as the core library, the fo
 - [x] Pager support for large result sets.
 - [x] Unit tests for Shell UI and command handlers.
 - [x] Enhanced code documentation, typing, and logging.
+- [x] Auto-reload last used taxonomy on startup.
 
 ## 8. Selected Roadmap
 - [x] **Persistent Shell History:** Switch from `InMemoryHistory` to `FileHistory` (storing in `~/.joltax-cli/history`) for cross-session commands.
