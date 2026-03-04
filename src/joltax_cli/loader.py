@@ -45,6 +45,7 @@ except ImportError:
             
         def annotate(self, ids: List[Union[int, str]]) -> pl.DataFrame:
             """Stubs JolTree.annotate()"""
+            # Ensure we return rows in the order of input IDs for lineage support
             return pl.DataFrame({
                 "tax_id": ids,
                 "name": [f"Name_{i}" for i in ids],
@@ -52,21 +53,19 @@ except ImportError:
                 "domain": ["Eukarya"] * len(ids)
             })
             
-        def find(self, query: str) -> pl.DataFrame:
-            """Stubs JolTree.find()"""
+        def search_name(self, query: str, fuzzy: bool = False, limit: int = 10, score_cutoff: float = 60.0) -> pl.DataFrame:
+            """Stubs JolTree.search_name()"""
             return pl.DataFrame({
                 "tax_id": [1, 2, 3],
-                "name": [f"Result for {query} 1", f"Result for {query} 2", f"Result for {query} 3"],
-                "rank": ["genus", "species", "species"]
+                "matched_name": [f"Result for {query} 1", f"Result for {query} 2", f"Result for {query} 3"],
+                "scientific_name": [f"Sci Name {i}" for i in range(1, 4)],
+                "rank": ["genus", "species", "species"],
+                "score": [100.0, 90.0, 80.0]
             })
             
-        def lineage(self, tax_id: Union[int, str]) -> pl.DataFrame:
-            """Stubs JolTree.lineage()"""
-            return pl.DataFrame({
-                "tax_id": [1, 10, 100, tax_id],
-                "name": ["Root", "Phylum_A", "Genus_B", f"Target_{tax_id}"],
-                "rank": ["root", "phylum", "genus", "species"]
-            })
+        def get_lineage(self, tax_id: Union[int, str]) -> List[int]:
+            """Stubs JolTree.get_lineage()"""
+            return [1, 10, 100, int(tax_id) if str(tax_id).isdigit() else 1000]
 
 from .config import get_cache_dir
 

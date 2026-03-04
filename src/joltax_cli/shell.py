@@ -366,11 +366,12 @@ class JolTaxShell:
 
         query: str = " ".join(args)
         try:
-            if not hasattr(self.current_tree, 'find'):
-                self.console.print("[red]The find method is not available in the current JolTree version.[/red]")
+            if not hasattr(self.current_tree, 'search_name'):
+                self.console.print("[red]The search_name method is not available in the current JolTree version.[/red]")
                 return
                 
-            df = self.current_tree.find(query)
+            # Use fuzzy search by default for the CLI find command
+            df = self.current_tree.search_name(query, fuzzy=True)
             table = format_find_results(df)
             with self.console.pager():
                 self.console.print(table)
@@ -393,11 +394,18 @@ class JolTaxShell:
 
         tax_id: Union[int, str] = int(args[0]) if args[0].isdigit() else args[0]
         try:
-            if not hasattr(self.current_tree, 'lineage'):
-                self.console.print("[red]The lineage method is not available in the current JolTree version.[/red]")
+            if not hasattr(self.current_tree, 'get_lineage'):
+                self.console.print("[red]The get_lineage method is not available in the current JolTree version.[/red]")
                 return
                 
-            df = self.current_tree.lineage(tax_id)
+            # get_lineage returns a list of IDs
+            lineage_ids = self.current_tree.get_lineage(tax_id)
+            if not lineage_ids:
+                self.console.print(f"[yellow]No lineage found for ID '{tax_id}'.[/yellow]")
+                return
+
+            # Annotate the IDs to get full metadata (names, ranks) for display
+            df = self.current_tree.annotate(lineage_ids)
             tree_vis = format_lineage(df, tax_id)
             self.console.print(tree_vis)
         except Exception as e:

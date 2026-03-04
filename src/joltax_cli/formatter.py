@@ -49,18 +49,23 @@ def format_lineage(lineage_df: pl.DataFrame, target_id: Union[int, str]) -> Tree
         return Tree(f"[red]No lineage found for {target_id}[/red]")
         
     # Get the first node (root)
-    # Expected columns: name, rank, tax_id
+    # Flexible column detection
+    def get_row_name(row):
+        return row.get('scientific_name') or row.get('name') or row.get('matched_name') or "Unknown"
+
     root_row: Dict[str, Any] = lineage_df.row(0, named=True)
+    root_name = get_row_name(root_row)
     root_node = Tree(
-        f"{root_row['name']} ([cyan]{root_row['rank']}[/cyan]) [dim]{root_row['tax_id']}[/dim]"
+        f"{root_name} ([cyan]{root_row['rank']}[/cyan]) [dim]{root_row['tax_id']}[/dim]"
     )
     
     current_node = root_node
     # Iterate through subsequent nodes to build the hierarchy
     for i in range(1, len(lineage_df)):
         row: Dict[str, Any] = lineage_df.row(i, named=True)
+        node_name = get_row_name(row)
         current_node = current_node.add(
-            f"{row['name']} ([cyan]{row['rank']}[/cyan]) [dim]{row['tax_id']}[/dim]"
+            f"{node_name} ([cyan]{row['rank']}[/cyan]) [dim]{row['tax_id']}[/dim]"
         )
         
     return root_node

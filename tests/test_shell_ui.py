@@ -7,23 +7,27 @@ def test_shell_commands():
     # Mock JolTree
     mock_tree = MagicMock()
     mock_tree.available_ranks = ["domain", "species"]
-    mock_tree.node_count = 1000
-    mock_tree.annotate.return_value = pl.DataFrame({
-        "tax_id": [123],
-        "name": ["TestNode"],
-        "rank": ["species"],
-        "domain": ["Eukarya"]
-    })
-    mock_tree.find.return_value = pl.DataFrame({
+    mock_tree.parents = [0] * 1000
+    mock_tree.top_rank = "domain"
+    mock_tree._build_time = "2026-03-01"
+    mock_tree._source_nodes = "nodes.dmp"
+    mock_tree._source_names = "names.dmp"
+    
+    def mock_annotate(ids):
+        return pl.DataFrame({
+            "tax_id": ids,
+            "scientific_name": [f"Name_{i}" for i in ids],
+            "rank": ["rank"] * len(ids)
+        })
+    mock_tree.annotate.side_effect = mock_annotate
+    mock_tree.search_name.return_value = pl.DataFrame({
         "tax_id": [1, 2],
-        "name": ["Match1", "Match2"],
-        "rank": ["genus", "species"]
+        "matched_name": ["Match1", "Match2"],
+        "scientific_name": ["SciMatch1", "SciMatch2"],
+        "rank": ["genus", "species"],
+        "score": [100.0, 90.0]
     })
-    mock_tree.lineage.return_value = pl.DataFrame({
-        "tax_id": [1, 10, 123],
-        "name": ["Root", "Phylum_A", "TestNode"],
-        "rank": ["root", "phylum", "species"]
-    })
+    mock_tree.get_lineage.return_value = [1, 10, 123]
 
     # Mock Loader
     mock_loader = MagicMock(spec=TaxonomyLoader)
@@ -50,11 +54,12 @@ def test_shell_commands():
     
     print("Testing 'find' command...")
     shell.handle_find(["query"])
-    mock_tree.find.assert_called_with("query")
+    mock_tree.search_name.assert_called()
     
     print("Testing 'lineage' command...")
     shell.handle_lineage(["123"])
-    mock_tree.lineage.assert_called_with(123)
+    mock_tree.get_lineage.assert_called_with(123)
+    mock_tree.annotate.assert_called()
     
     print("All tests passed!")
 
