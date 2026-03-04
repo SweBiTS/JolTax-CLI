@@ -59,7 +59,7 @@ Ensure you have the `joltax` backend installed as well.
 
 ## ⚙️ Configuration
 
-JolTax-CLI stores its configuration in `~/.config/joltax/config.yaml`. You can modify the `cache_dir` setting to change where taxonomy binaries are stored.
+JolTax-CLI stores its configuration in `~/.joltax-cli/config.yaml`. You can modify the `cache_dir` setting to change where taxonomy binaries are stored.
 
 ## 🧪 Architecture & Performance
 

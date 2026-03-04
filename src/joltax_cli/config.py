@@ -15,7 +15,7 @@ from rich.prompt import Prompt, Confirm
 # Set up logging for the module
 logger = logging.getLogger(__name__)
 
-DEFAULT_CONFIG_DIR: Path = Path.home() / ".config" / "joltax"
+DEFAULT_CONFIG_DIR: Path = Path.home() / ".joltax-cli"
 DEFAULT_CONFIG_FILE: Path = DEFAULT_CONFIG_DIR / "config.yaml"
 DEFAULT_CACHE_DIR: Path = DEFAULT_CONFIG_DIR / "cache"
 

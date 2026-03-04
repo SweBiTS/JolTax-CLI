@@ -36,8 +36,8 @@ To maintain the same "air" and performance standards as the core library, the fo
 - `polars`: For zero-copy data handling between the library and the CLI.
 
 ## 5. System Architecture & Configuration
-- **Config Path:** `~/.config/joltax/config.yaml`
-- **Cache Path:** `~/.config/joltax/cache/` (Governed by `cache_dir` in config).
+- **Config Path:** `~/.joltax-cli/config.yaml`
+- **Cache Path:** `~/.joltax-cli/cache/` (Governed by `cache_dir` in config).
 - **Interactive Shell:** Managed via `JolTaxShell` in `src/joltax_cli/shell.py`.
 
 ## 6. Supported Commands
