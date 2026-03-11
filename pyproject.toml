@@ -16,7 +16,7 @@ dependencies = [
     "rich",
     "pyyaml",
     "polars",
-    "joltax",
+    "joltax>=0.2.0",
     "pygments",
     "psutil"
 ]

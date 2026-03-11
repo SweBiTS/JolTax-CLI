@@ -1,5 +1,5 @@
 import polars as pl
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 from joltax_cli.shell import JolTaxShell
 from joltax_cli.loader import TaxonomyLoader
 
@@ -9,17 +9,30 @@ def test_shell_commands():
     mock_tree.available_ranks = ["domain", "species"]
     mock_tree.parents = [0] * 1000
     mock_tree.top_rank = "domain"
-    mock_tree._build_time = "2026-03-01"
-    mock_tree._source_nodes = "nodes.dmp"
-    mock_tree._source_names = "names.dmp"
+    
+    # Mock summary property
+    type(mock_tree).summary = PropertyMock(return_value={
+        "node_count": 1000,
+        "top_rank": "domain",
+        "build_time": "2026-03-01",
+        "source_nodes": "nodes.dmp",
+        "source_names": "names.dmp",
+        "package_version": "0.2.0",
+        "max_depth": 5,
+        "ranks_present": 2
+    })
     
     def mock_annotate(ids):
+        # New format with t_ prefix
         return pl.DataFrame({
-            "tax_id": ids,
-            "scientific_name": [f"Name_{i}" for i in ids],
-            "rank": ["rank"] * len(ids)
+            "t_id": ids,
+            "t_domain": ["Eukaryota"] * len(ids),
+            "t_phylum": ["Chordata"] * len(ids),
+            "t_scientific_name": [f"Name_{i}" for i in ids],
+            "t_rank": ["rank"] * len(ids)
         })
     mock_tree.annotate.side_effect = mock_annotate
+    
     mock_tree.search_name.return_value = pl.DataFrame({
         "tax_id": [1, 2],
         "matched_name": ["Match1", "Match2"],

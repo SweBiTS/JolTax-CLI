@@ -361,20 +361,26 @@ class JolTaxShell:
         if not self._ensure_loaded():
             return
 
-        # Metrics
-        node_count = f"{len(self.current_tree.parents):,}" if hasattr(self.current_tree, 'parents') else "Unknown"
+        summary = self.current_tree.summary
         
         # Provenance Metadata
-        build_time = getattr(self.current_tree, '_build_time', 'Unknown')
-        source_nodes = getattr(self.current_tree, '_source_nodes', 'Unknown')
-        source_names = getattr(self.current_tree, '_source_names', 'Unknown')
+        build_time = summary.get('build_time', 'Unknown')
+        source_nodes = summary.get('source_nodes', 'Unknown')
+        source_names = summary.get('source_names', 'Unknown')
+        node_count = f"{summary.get('node_count', 0):,}"
+        top_rank = summary.get('top_rank', 'domain')
+        package_ver = summary.get('package_version', 'Unknown')
+        max_depth = summary.get('max_depth', 0)
         
         # Combined Content
         content = (
             f"[bold cyan]Nodes:[/bold cyan] {node_count}\n"
+            f"[bold cyan]Top Rank:[/bold cyan] {top_rank}\n"
+            f"[bold cyan]Max Depth:[/bold cyan] {max_depth}\n"
             f"[bold cyan]Built At:[/bold cyan] {build_time}\n"
             f"[bold cyan]Nodes Source:[/bold cyan] {source_nodes}\n"
-            f"[bold cyan]Names Source:[/bold cyan] {source_names}"
+            f"[bold cyan]Names Source:[/bold cyan] {source_names}\n"
+            f"[bold cyan]Core Version:[/bold cyan] {package_ver}"
         )
         
         provenance_panel = Panel(content, title="[bold]Provenance & Metadata[/bold]", border_style="blue", expand=True)

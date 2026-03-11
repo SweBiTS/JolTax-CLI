@@ -12,6 +12,7 @@ from typing import List, Union, Dict, Any
 def format_dataframe(df: pl.DataFrame, title: str = "Results") -> Table:
     """
     Converts a Polars DataFrame into a Rich Table for pretty printing.
+    Strips 't_' prefix from column names for cleaner display.
 
     Args:
         df: The Polars DataFrame containing the data.
@@ -22,13 +23,16 @@ def format_dataframe(df: pl.DataFrame, title: str = "Results") -> Table:
     """
     table = Table(title=title, show_header=True, header_style="bold magenta")
     
-    # Add columns from the DataFrame
+    # Add columns from the DataFrame (strip t_ prefix if present)
     for col in df.columns:
-        table.add_column(str(col))
+        display_name = str(col)
+        if display_name.startswith("t_"):
+            display_name = display_name[2:].replace("_", " ").title()
+        table.add_column(display_name)
         
     # Add rows from the DataFrame
     for row in df.iter_rows():
-        table.add_row(*[str(val) for val in row])
+        table.add_row(*[str(val) if val is not None else "[dim]None[/dim]" for val in row])
         
     return table
 
@@ -48,24 +52,27 @@ def format_lineage(lineage_df: pl.DataFrame, target_id: Union[int, str]) -> Tree
     if lineage_df.is_empty():
         return Tree(f"[red]No lineage found for {target_id}[/red]")
         
-    # Get the first node (root)
-    # Flexible column detection
-    def get_row_name(row):
-        return row.get('scientific_name') or row.get('name') or row.get('matched_name') or "Unknown"
+    # Flexible column detection favoring the new t_ prefix
+    def get_row_data(row):
+        name = row.get('t_scientific_name') or row.get('scientific_name') or row.get('name') or "Unknown"
+        rank = row.get('t_rank') or row.get('rank') or "unclassified"
+        tid = row.get('t_id') or row.get('tax_id') or "Unknown"
+        return name, rank, tid
 
     root_row: Dict[str, Any] = lineage_df.row(0, named=True)
-    root_name = get_row_name(root_row)
+    name, rank, tid = get_row_data(root_row)
+    
     root_node = Tree(
-        f"{root_name} ([cyan]{root_row['rank']}[/cyan]) [dim]{root_row['tax_id']}[/dim]"
+        f"{name} ([cyan]{rank}[/cyan]) [dim]{tid}[/dim]"
     )
     
     current_node = root_node
     # Iterate through subsequent nodes to build the hierarchy
     for i in range(1, len(lineage_df)):
         row: Dict[str, Any] = lineage_df.row(i, named=True)
-        node_name = get_row_name(row)
+        name, rank, tid = get_row_data(row)
         current_node = current_node.add(
-            f"{node_name} ([cyan]{row['rank']}[/cyan]) [dim]{row['tax_id']}[/dim]"
+            f"{name} ([cyan]{rank}[/cyan]) [dim]{tid}[/dim]"
         )
         
     return root_node

@@ -67,6 +67,6 @@ To maintain the same "air" and performance standards as the core library, the fo
 ## 8. Selected Roadmap
 - [x] **Persistent Shell History:** Switch from `InMemoryHistory` to `FileHistory` (storing in `~/.joltax-cli/history`) for cross-session commands.
 - [ ] **Batch & CLI Mode:** Support running commands via CLI arguments (e.g., `joltax annotate 9606`) or piping from stdin.
-- [ ] **Export Support:** Add `--output` flags to commands like `annotate` and `find` to save results as CSV, TSV, or Parquet using Polars.
+- [ ] **Export Support:** Add `--output` flags to commands like `annotate` and `find` to save results as CSV, TSV, or Parquet using Polars. Ensure export files maintain raw `t_` prefixed column names for consistency with `joltax` core, even if the interactive shell display remains "pretty".
 - [ ] **Clipboard Integration:** Commands to copy IDs or lineage trees directly to the system clipboard.
 - [ ] **Distribution:** Finalize `pyproject.toml` and package structure for PyPI and Bioconda releases.

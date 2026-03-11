@@ -12,10 +12,26 @@ from typing import List, Optional, Union
 # Set up logging for the module
 logger = logging.getLogger(__name__)
 
+def _check_joltax_version(version_str: str) -> bool:
+    """Helper to check if joltax version is >= 0.2.0."""
+    try:
+        parts = [int(p) for p in version_str.split('.')]
+        return parts[0] >= 1 or (parts[0] == 0 and parts[1] >= 2)
+    except (ValueError, IndexError):
+        return False
+
 try:
-    from joltax import JolTree
-except ImportError:
+    from joltax import JolTree, __version__ as joltax_version
+    if not _check_joltax_version(joltax_version):
+        raise ImportError(f"Incompatible joltax version: {joltax_version}. Required: >= 0.2.0")
+except ImportError as e:
     import polars as pl
+    import numpy as np
+
+    # If it's a version mismatch, re-raise to inform the user
+    if "Incompatible joltax version" in str(e):
+        raise
+
     # A simple mock to allow basic CLI testing without the backend installed
     class JolTree:
         """
@@ -40,17 +56,19 @@ except ImportError:
         def save(self, directory: str) -> None:
             """Stubs JolTree.save()"""
             os.makedirs(directory, exist_ok=True)
-            with open(os.path.join(directory, "metadata.pkl"), "w") as f:
-                f.write("mock metadata")
+            import pickle
+            with open(os.path.join(directory, "metadata.pkl"), "wb") as f:
+                pickle.dump({"rank_names": self.available_ranks, "top_rank": self.top_rank}, f)
             
         def annotate(self, ids: List[Union[int, str]]) -> pl.DataFrame:
             """Stubs JolTree.annotate()"""
             # Ensure we return rows in the order of input IDs for lineage support
             return pl.DataFrame({
-                "tax_id": ids,
-                "name": [f"Name_{i}" for i in ids],
-                "rank": ["species"] * len(ids),
-                "domain": ["Eukarya"] * len(ids)
+                "t_id": ids,
+                "t_domain": ["Eukarya"] * len(ids),
+                "t_phylum": ["Chordata"] * len(ids),
+                "t_scientific_name": [f"Name_{i}" for i in ids],
+                "t_rank": ["species"] * len(ids)
             })
             
         def search_name(self, query: str, fuzzy: bool = False, limit: int = 10, score_cutoff: float = 60.0) -> pl.DataFrame:
@@ -66,6 +84,20 @@ except ImportError:
         def get_lineage(self, tax_id: Union[int, str]) -> List[int]:
             """Stubs JolTree.get_lineage()"""
             return [1, 10, 100, int(tax_id) if str(tax_id).isdigit() else 1000]
+
+        @property
+        def summary(self) -> dict:
+            """Returns a summary of the tree's metadata and provenance."""
+            return {
+                "node_count": len(self.parents),
+                "top_rank": self.top_rank,
+                "build_time": self._build_time,
+                "source_nodes": self._source_nodes,
+                "source_names": self._source_names,
+                "package_version": "0.2.0-mock",
+                "max_depth": 5,
+                "ranks_present": len(self.available_ranks)
+            }
 
 from .config import get_cache_dir
 
