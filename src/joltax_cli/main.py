@@ -7,9 +7,7 @@ Initializes the configuration, loader, and starts the interactive shell.
 import sys
 import logging
 from rich.logging import RichHandler
-from .loader import TaxonomyLoader
 from .config import load_config, console
-from .shell import JolTaxShell
 
 # Configure global logging with RichHandler using the shared console
 logging.basicConfig(
@@ -33,12 +31,22 @@ def main() -> None:
         # Load configuration to ensure it and the cache directory exist
         load_config()
         
+        # Deferred imports to handle version/dependency errors gracefully
+        from .loader import TaxonomyLoader
+        from .shell import JolTaxShell
+        
         # Initialize the taxonomy loader and shell
         loader = TaxonomyLoader()
         shell = JolTaxShell(loader)
         
         # Start the REPL
         shell.run()
+    except ImportError as e:
+        if "Incompatible joltax version" in str(e):
+            print("Incompatible JolTax version, please upgrade.")
+        else:
+            print(f"Import Error: {e}")
+        sys.exit(1)
     except KeyboardInterrupt:
         print("\nInterrupted by user. Exiting.")
         sys.exit(0)
